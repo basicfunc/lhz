@@ -2,13 +2,9 @@ use std::fs::{metadata, read_dir, File};
 use std::io::{ErrorKind, Read};
 use std::path::{Path, PathBuf};
 
-const CHUNK_SIZE: usize = if cfg!(target_pointer_width = "64") {
-    64 * 1024
-} else {
-    32 * 1024
-};
+use lfhuffzip::CHUNK_SIZE;
 
-fn open_file(file_name: PathBuf) -> Result<Vec<[u8; CHUNK_SIZE]>, String> {
+pub fn open_file(file_name: PathBuf) -> Result<Vec<[u8; CHUNK_SIZE]>, String> {
     let mut chunks: Vec<[u8; CHUNK_SIZE]> = vec![];
     let mut file;
 
