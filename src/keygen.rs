@@ -1,22 +1,43 @@
-use lfhuffzip::CHUNK_SIZE;
+use lhz::{CHUNK, CHUNKS, CHUNK_SIZE, KEYS};
 
-const LFSR_SEED: u64 = 0xACE1; // LFSR initial seed value
-const LFSR_POLY: u64 = 0x95A9; // LFSR polynomial
+const LFSR_POLY: u128 = 0xB5AD4ECEDA1CE2A9F7AA6EA63B8D4C84;
 
-fn lfsr(mut state: u64) -> u64 {
-    let bit = state.wrapping_mul(LFSR_POLY).count_ones() & 1;
-    state = (state >> 1) | ((bit as u64) << 63);
-    state
-}
+pub fn generate_key(seed: u128) -> KEYS {
+    // Determine the size of the key (in bytes)
+    let key_size = CHUNK_SIZE;
 
-pub fn generate_key(data_block: &[u8]) -> [u8; CHUNK_SIZE] {
-    let mut key = [0u8; CHUNK_SIZE];
-    let mut lfsr_state = LFSR_SEED;
+    // Initialize the LFSR state to the seed value
+    let mut lfsr_state = seed;
 
-    for idx in 0..data_block.len() {
-        lfsr_state = lfsr(lfsr_state);
-        key[idx] = (lfsr_state & 0xFF) as u8;
+    // Generate the pseudo-random key
+    let mut key = [0; CHUNK_SIZE];
+    for idx in 0..key_size {
+        let mut byte = 0u8;
+        for bit_index in 0..8 {
+            let lsb = lfsr_state & 1;
+            lfsr_state >>= 1;
+            if lsb == 1 {
+                lfsr_state = lfsr_state ^ LFSR_POLY;
+            }
+            byte = byte | (lsb << bit_index) as u8;
+        }
+        key[idx] = byte;
     }
 
+    // Return the generated key
     key
+}
+
+pub fn scramble(keys: &Vec<KEYS>, data: &CHUNKS) -> CHUNKS {
+    let mut scrambled_data: CHUNKS = vec![];
+
+    for (k, d) in keys.iter().zip(data.iter()) {
+        let mut s_data: CHUNK = [0; CHUNK_SIZE];
+        for (idx, (key, data)) in k.iter().zip(d.iter()).enumerate() {
+            s_data[idx] = data ^ key;
+        }
+        scrambled_data.push(s_data)
+    }
+
+    scrambled_data
 }

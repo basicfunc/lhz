@@ -2,50 +2,48 @@ use std::fs::{metadata, read_dir, File};
 use std::io::{ErrorKind, Read};
 use std::path::{Path, PathBuf};
 
-use lfhuffzip::CHUNK_SIZE;
+use lhz::{CHUNK, CHUNKS, CHUNK_SIZE};
 
-pub fn open_file(file_name: PathBuf) -> Result<Vec<[u8; CHUNK_SIZE]>, String> {
-    let mut chunks: Vec<[u8; CHUNK_SIZE]> = vec![];
+pub fn open_file(file_name: PathBuf) -> Result<CHUNKS, &'static str> {
+    let mut chunks: CHUNKS = vec![];
     let mut file;
 
     match File::open(&file_name) {
         Ok(f) => file = f,
         Err(e) => {
             if e.kind() == ErrorKind::NotFound {
-                return Err(format!("Unable to open {file_name:?}: not found."));
+                return Err("Unable to open {file_name:?}: not found.");
             } else if e.kind() == ErrorKind::PermissionDenied {
-                return Err(format!("Unable to open {file_name:?}: permission denied."));
+                return Err("Unable to open {file_name:?}: permission denied.");
             } else {
-                return Err(format!(
-                    "Unable to open {file_name:?}: unknown error occured."
-                ));
+                return Err("Unable to open {file_name:?}: unknown error occured.");
             }
         }
     }
 
     loop {
-        let mut buffer = [0; CHUNK_SIZE];
+        let mut buffer: CHUNK = [0; CHUNK_SIZE];
         let bytes_read;
 
         match file.read(&mut buffer) {
             Ok(bytes) => bytes_read = bytes,
             Err(e) => return match e.kind() {
                 ErrorKind::NotFound =>
-                    Err(format!("error specified file does not exist.")),
+                    Err("error specified file does not exist."),
                 ErrorKind::PermissionDenied =>
-                    Err(format!(
+                    Err(
                         "The current user does not have permission to access the specified file."
-                    )),
+                    ),
                 ErrorKind::Interrupted =>
-                    Err(format!(
+                    Err(
                         "The read operation was interrupted by another signal."
-                    )),
+                    ),
                 ErrorKind::UnexpectedEof =>
-                    Err(format!(
+                    Err(
                         "An unexpected end of file was encountered during the read operation."
-                    )),
+                    ),
                 _ =>
-                    Err(format!("Unepected error occured while reading from specified file, there are many reasons of this error such as invalid data in the file, disk errors, or insufficient memory."))
+                    Err("Unepected error occured while reading from specified file, there are many reasons of this error such as invalid data in the file, disk errors, or insufficient memory.")
 
             }
         }
