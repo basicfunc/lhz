@@ -1,20 +1,18 @@
-mod compressor;
-mod fopen;
-mod keygen;
+mod huff_codec;
+mod scrambler;
+mod thresher;
 
-use crate::keygen::scramble;
-use compressor::*;
-use fopen::open_file;
-use keygen::generate_key;
-use lhz::CHUNKS;
+use huff_codec::*;
 use lhz::KEYS;
+use scrambler::*;
 use std::env;
+use thresher::open;
 
 fn main() {
     let args = env::args().collect::<Vec<String>>();
 
     if args.len() > 1 {
-        let chunks = open_file(std::path::PathBuf::from(&args[1])).unwrap();
+        let chunks = open(&args[1]).unwrap();
 
         let mut keys: Vec<KEYS> = vec![];
 

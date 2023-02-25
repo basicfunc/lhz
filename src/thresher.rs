@@ -12,11 +12,11 @@ pub fn open_file(file_name: PathBuf) -> Result<CHUNKS, &'static str> {
         Ok(f) => file = f,
         Err(e) => {
             if e.kind() == ErrorKind::NotFound {
-                return Err("Unable to open {file_name:?}: not found.");
+                return Err("Error: Unable to open {file_name:?}: not found.");
             } else if e.kind() == ErrorKind::PermissionDenied {
-                return Err("Unable to open {file_name:?}: permission denied.");
+                return Err("Error: Unable to open {file_name:?}: permission denied.");
             } else {
-                return Err("Unable to open {file_name:?}: unknown error occured.");
+                return Err("Error: Unable to open {file_name:?}: unknown error occured.");
             }
         }
     }
@@ -29,21 +29,21 @@ pub fn open_file(file_name: PathBuf) -> Result<CHUNKS, &'static str> {
             Ok(bytes) => bytes_read = bytes,
             Err(e) => return match e.kind() {
                 ErrorKind::NotFound =>
-                    Err("error specified file does not exist."),
+                    Err("Error: specified file does not exist."),
                 ErrorKind::PermissionDenied =>
                     Err(
-                        "The current user does not have permission to access the specified file."
+                        "Error: The current user does not have permission to access the specified file."
                     ),
                 ErrorKind::Interrupted =>
                     Err(
-                        "The read operation was interrupted by another signal."
+                        "Error: The read operation was interrupted by another signal."
                     ),
                 ErrorKind::UnexpectedEof =>
                     Err(
-                        "An unexpected end of file was encountered during the read operation."
+                        "Error: An unexpected end of file was encountered during the read operation."
                     ),
                 _ =>
-                    Err("Unepected error occured while reading from specified file, there are many reasons of this error such as invalid data in the file, disk errors, or insufficient memory.")
+                    Err("Error: Unepected error occured while reading from specified file, there are many reasons of this error such as invalid data in the file, disk errors, or insufficient memory.")
 
             }
         }
@@ -58,11 +58,11 @@ pub fn open_file(file_name: PathBuf) -> Result<CHUNKS, &'static str> {
     Ok(chunks)
 }
 
-fn open_folder(dir_name: &String) -> Result<String, std::io::Error> {
+fn open_folder(dir_name: &String) -> Result<CHUNKS, &'static str> {
     let dir = Path::new(dir_name);
 
-    for entry in read_dir(dir)? {
-        let entry = entry?;
+    for entry in read_dir(dir).unwrap() {
+        let entry = entry.unwrap();
         let path = entry.path();
 
         if path.is_file() {
@@ -78,13 +78,13 @@ fn open_folder(dir_name: &String) -> Result<String, std::io::Error> {
     unimplemented!("Operation for directories aren't implemented yet!!")
 }
 
-pub fn open(src: &String) {
+pub fn open(src: &String) -> Result<CHUNKS, &'static str> {
     let f = metadata(&src).unwrap();
 
     if f.is_file() {
-        println!("{:?}", open_file(PathBuf::from(&src)))
+        open_file(PathBuf::from(&src))
     } else if f.is_dir() {
-        _ = open_folder(&src)
+        open_folder(src)
     } else {
         panic!("Unknown error occured!")
     }
